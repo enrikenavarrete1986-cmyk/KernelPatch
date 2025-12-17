@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       link:
-        description: "Pega aqui tu link de LimeWire"
+        description: "Pega aqui tu link"
         required: true
       sukisu:
-        description: "Escribe la palabra true"
+        description: "true"
         required: true
         default: "true"
 
@@ -24,7 +24,7 @@ jobs:
           chmod +x kptools
           ./kptools -g kpimg.elf
           ./kptools -i boot.img -p kpimg.elf --out boot-patched.img
-          
+
       - name: Upload Result
         uses: actions/upload-artifact@v4
         with:

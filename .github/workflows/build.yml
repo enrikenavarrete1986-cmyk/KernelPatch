@@ -1,29 +1,113 @@
 name: Build CI
+
 on:
   workflow_dispatch:
     inputs:
       link:
-        description: "Pega aqui tu link"
+        description: https://limewire.com/d/pH48W#M8jXgeoLG2
         required: true
       sukisu:
-        description: "true"
+        description: true
         required: true
         default: "true"
 
 jobs:
-  build:
+  build-kpimg:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+          fetch-depth: 0
+
+      - name: Generate version
+        id: parse_version
+        run: |
+          MAJOR=$(grep "#define MAJOR" version | awk '{print $3}')
+          MINOR=$(grep "#define MINOR" version | awk '{print $3}')
+          PATCH=$(grep "#define PATCH" version | awk '{print $3}')
+          VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "Generated Version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Install Compiler
+        run: |
+          curl -LO arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf.tar.xz https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu/12.2.rel1/binrel/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf.tar.xz
+          tar -xJf arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf.tar.xz
+
+      - name: Build kpimg
+        run: |
+          export TARGET_COMPILE="$(pwd)/arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf/bin/aarch64-none-elf-"
+          cd kernel
+          
+          export ANDROID=1
+          make
+          mv kpimg kpimg-android
+          mv kpimg.elf kpimg.elf-android
+          make clean
+          
+          unset ANDROID
+          make
+          mv kpimg kpimg-linux
+          mv kpimg.elf kpimg.elf-linux
+          make clean
+          
+          cd ..
+          cd kons
+          
+          cd demo_hello
+          make
+          mv hello.kpm demo_hello.kpm
+          
+          cd ../demo_inlinehook
+          make
+          mv inlinehook.kpm demo_inlinehook.kpm
+          
+          cd ../demo_syscallhook
+          make
+          mv syscallhook.kpm demo_syscallhook.kpm
+
+      - name: Upload elf
+        uses: actions/upload-artifact@v4
+        with:
+          path: |
+            kernel/kpimg.elf-linux
+            kernel/kpimg.elf-android
+          name: kpimg.elf
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.parse_version.outputs.VERSION }}
+          files: |
+            kernel/kpimg-android
+            kernel/kpimg.elf-android
+            kernel/kpimg-linux
+            kernel/kpimg.elf-linux
+            kons/demo_hello/demo_hello.kpm
+            kons/demo_inlinehook/demo_inlinehook.kpm
+            kons/demo_syscallhook/demo_syscallhook.kpm
+
+  patch-boot:
+    needs: build-kpimg
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Download kpimg.elf
+        uses: actions/download-artifact@v4
+        with:
+          name: kpimg.elf
+          path: .
 
       - name: Patch Boot
         run: |
           wget -O boot.img "${{ github.event.inputs.link }}"
           wget https://github.com/bmax121/KernelPatch/releases/download/0.12.4/kptools-linux -O kptools
           chmod +x kptools
-          ./kptools -g kpimg.elf
-          ./kptools -i boot.img -p kpimg.elf --out boot-patched.img
+          ./kptools -i boot.img -p kpimg.elf-android --out boot-patched.img
 
       - name: Upload Result
         uses: actions/upload-artifact@v4

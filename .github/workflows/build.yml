@@ -1,8 +1,17 @@
 name: Build CI
 
 on:
-  workflow_call:
-  workflow_dispatch:
+   workflow_dispatch:
+    inputs:
+      link:
+        description: "Pega aqui tu link de LimeWire"
+        required: true
+      sukisu:
+        description: "Escribe la palabra true"
+        required: true
+        default: "true"
+        
+  
 
 jobs:
   Build-kpimg:

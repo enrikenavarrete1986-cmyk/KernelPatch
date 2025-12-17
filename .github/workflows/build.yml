@@ -3,8 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       link:
+        description: "Pega aqui tu link de LimeWire"
         required: true
       sukisu:
+        description: "Escribe la palabra true"
         required: true
         default: "true"
 
@@ -12,14 +14,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: |
-          curl -L "${{ github.event.inputs.link }}" -o boot.img
-          curl -L "https://github.com/bmax121/KernelPatch/releases/download/0.12.4/kptools-linux" -o kptools
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Patch Boot
+        run: |
+          wget -O boot.img "${{ github.event.inputs.link }}"
+          wget https://github.com/bmax121/KernelPatch/releases/download/0.12.4/kptools-linux -O kptools
           chmod +x kptools
           ./kptools -g kpimg.elf
           ./kptools -i boot.img -p kpimg.elf --out boot-patched.img
-      - uses: actions/upload-artifact@v4
+          
+      - name: Upload Result
+        uses: actions/upload-artifact@v4
         with:
           name: boot-patched
           path: boot-patched.img

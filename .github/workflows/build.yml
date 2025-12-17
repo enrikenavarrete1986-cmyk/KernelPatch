@@ -3,10 +3,8 @@ on:
   workflow_dispatch:
     inputs:
       link:
-        description: "Enlace"
         required: true
       sukisu:
-        description: "true"
         required: true
         default: "true"
 
@@ -15,8 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch
-        run: |
+      - run: |
           curl -L "${{ github.event.inputs.link }}" -o boot.img
           curl -L "https://github.com/bmax121/KernelPatch/releases/download/0.12.4/kptools-linux" -o kptools
           chmod +x kptools

@@ -22,6 +22,7 @@ jobs:
           wget -O boot.img "${{ github.event.inputs.link }}"
           wget https://github.com/bmax121/KernelPatch/releases/download/0.12.4/kptools-linux
           chmod +x kptools-linux
+          ./kptools-linux -g kpimg.elf
           ./kptools-linux -i boot.img -p kpimg.elf --out boot-patched.img
           
       - name: Upload Result

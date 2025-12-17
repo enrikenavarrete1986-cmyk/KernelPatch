@@ -19,12 +19,12 @@ jobs:
 
       - name: Patch Boot
         run: |
-          curl -L -o boot.img "${{ github.event.inputs.link }}"
-          curl -L -o kptools https://github.com/bmax121/KernelPatch/releases/download/0.12.4/kptools-linux
+          curl -L "${{ github.event.inputs.link }}" -o boot.img
+          curl -L "https://github.com/bmax121/KernelPatch/releases/download/0.12.4/kptools-linux" -o kptools
           chmod +x kptools
           ./kptools -g kpimg.elf
           ./kptools -i boot.img -p kpimg.elf --out boot-patched.img
-          
+
       - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
